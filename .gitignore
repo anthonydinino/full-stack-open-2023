@@ -13,8 +13,8 @@ dist-ssr
 *.local
 
 # Editor directories and files
-*.prettierrc
-*.vite
+.prettierrc
+.vite
 .vscode/*
 !.vscode/extensions.json
 .idea
