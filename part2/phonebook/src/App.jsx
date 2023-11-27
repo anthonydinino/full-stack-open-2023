@@ -13,16 +13,32 @@ const Filter = ({ filterInfo: { nameFilter, setNameFilter } }) => {
   );
 };
 
-const Persons = ({ persons, nameFilter }) =>
-  persons
+const deletePerson = (id, { persons, setPersons }) => {
+  const person = persons.find((p) => p.id === id);
+  if (window.confirm(`Delete ${person.name} ?`)) {
+    personsService.remove(id).then(() => {
+      setPersons(persons.filter((p) => p.id != id));
+    });
+  }
+};
+
+const Persons = ({ personsState, nameFilter }) => {
+  const { persons, setPersons } = personsState;
+  return persons
     .filter((person) =>
       person.name.toLowerCase().includes(nameFilter.toLowerCase())
     )
     .map((person) => (
-      <p key={person.id} style={{ margin: "0px" }}>
-        {person.name} {person.number}
-      </p>
+      <div key={person.id} style={{ display: "flex", gap: "0.5rem" }}>
+        <p style={{ margin: "0px" }}>
+          {person.name} {person.number}
+        </p>
+        <button onClick={() => deletePerson(person.id, personsState)}>
+          delete
+        </button>
+      </div>
     ));
+};
 
 const PersonForm = ({ addPerson, newNameState, newNumberState }) => {
   const { newName, setNewName } = newNameState;
@@ -80,6 +96,7 @@ const App = () => {
       .then((person) => setPersons(persons.concat(person)));
 
     setNewName("");
+    setNewNumber("");
   };
 
   const personAlreadyExists = (personName) => {
@@ -99,7 +116,7 @@ const App = () => {
         newNumberState={{ newNumber, setNewNumber }}
       />
       <h3>Numbers</h3>
-      <Persons persons={persons} nameFilter={nameFilter} />
+      <Persons personsState={{ persons, setPersons }} nameFilter={nameFilter} />
     </div>
   );
 };
