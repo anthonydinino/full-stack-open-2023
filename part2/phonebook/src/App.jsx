@@ -1,6 +1,20 @@
 import { useState, useEffect } from "react";
 import personsService from "../services/person";
 
+const Notification = ({ messageInfo }) => {
+  const { message, setMessage } = messageInfo;
+  if (message.message === null) {
+    return null;
+  }
+
+  setTimeout(() => setMessage({ message: "", isError: false }), 3000);
+  return (
+    <div className={`notification ${message.isError && "error"}`}>
+      {message.message}
+    </div>
+  );
+};
+
 const Filter = ({ filterInfo: { nameFilter, setNameFilter } }) => {
   return (
     <p>
@@ -13,17 +27,28 @@ const Filter = ({ filterInfo: { nameFilter, setNameFilter } }) => {
   );
 };
 
-const deletePerson = (id, { persons, setPersons }) => {
+const deletePerson = (id, { persons, setPersons }, setMessage) => {
   const person = persons.find((p) => p.id === id);
   if (window.confirm(`Delete ${person.name} ?`)) {
-    personsService.remove(id).then(() => {
-      setPersons(persons.filter((p) => p.id != id));
+    personsService.getAll().then((persons) => {
+      if (persons.find((p) => p.id === id)) {
+        personsService.remove(id).then(() => {
+          setPersons(persons.filter((p) => p.id != id));
+        });
+      } else {
+        setMessage({
+          message: `Information of ${person.name} has already been removed from the server`,
+          isError: true,
+        });
+        setPersons(persons);
+      }
     });
   }
 };
 
-const Persons = ({ personsState, nameFilter }) => {
+const Persons = ({ personsState, messageState, nameFilter }) => {
   const { persons, setPersons } = personsState;
+  const { message, setMessage } = messageState;
   return persons
     .filter((person) =>
       person.name.toLowerCase().includes(nameFilter.toLowerCase())
@@ -33,7 +58,9 @@ const Persons = ({ personsState, nameFilter }) => {
         <p style={{ margin: "0px" }}>
           {person.name} {person.number}
         </p>
-        <button onClick={() => deletePerson(person.id, personsState)}>
+        <button
+          onClick={() => deletePerson(person.id, personsState, setMessage)}
+        >
           delete
         </button>
       </div>
@@ -75,6 +102,7 @@ const App = () => {
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [nameFilter, setNameFilter] = useState("");
+  const [message, setMessage] = useState({ message: "", isError: false });
 
   useEffect(() => {
     personsService.getAll().then((persons) => setPersons(persons));
@@ -88,14 +116,28 @@ const App = () => {
           `${newName} is already added to the phonebook, replace the old number with a new one?`
         )
       ) {
-        let targetPerson = persons.find((p) => p.name === newName);
-        targetPerson = { ...targetPerson, number: newNumber };
-        personsService.update(targetPerson.id, targetPerson);
-        setPersons(
-          persons.map((person) =>
-            person.id === targetPerson.id ? targetPerson : person
-          )
-        );
+        personsService.getAll().then((persons) => {
+          if (persons.find((p) => p.name === newName)) {
+            let targetPerson = persons.find((p) => p.name === newName);
+            targetPerson = { ...targetPerson, number: newNumber };
+            personsService.update(targetPerson.id, targetPerson);
+            setPersons(
+              persons.map((person) =>
+                person.id === targetPerson.id ? targetPerson : person
+              )
+            );
+            setMessage({
+              message: `Updated ${newName}'s number`,
+              isError: false,
+            });
+          } else {
+            setMessage({
+              message: `Information of ${newName} has already been removed from the server`,
+              isError: true,
+            });
+            setPersons(persons);
+          }
+        });
       }
     } else {
       const personObject = {
@@ -106,6 +148,7 @@ const App = () => {
       personsService
         .create(personObject)
         .then((person) => setPersons(persons.concat(person)));
+      setMessage({ message: `Added ${newName}`, isError: false });
     }
     setNewName("");
     setNewNumber("");
@@ -120,6 +163,9 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      {message.message && (
+        <Notification messageInfo={{ message, setMessage }} />
+      )}
       <Filter filterInfo={{ nameFilter, setNameFilter }} />
       <h3>add a new</h3>
       <PersonForm
@@ -128,7 +174,11 @@ const App = () => {
         newNumberState={{ newNumber, setNewNumber }}
       />
       <h3>Numbers</h3>
-      <Persons personsState={{ persons, setPersons }} nameFilter={nameFilter} />
+      <Persons
+        personsState={{ persons, setPersons }}
+        messageState={{ message, setMessage }}
+        nameFilter={nameFilter}
+      />
     </div>
   );
 };
