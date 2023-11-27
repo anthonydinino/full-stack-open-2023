@@ -83,18 +83,30 @@ const App = () => {
   const addPerson = (e) => {
     e.preventDefault();
     if (personAlreadyExists(newName)) {
-      alert(`${newName} is already added to the phonebook`);
-      return;
+      if (
+        window.confirm(
+          `${newName} is already added to the phonebook, replace the old number with a new one?`
+        )
+      ) {
+        let targetPerson = persons.find((p) => p.name === newName);
+        targetPerson = { ...targetPerson, number: newNumber };
+        personsService.update(targetPerson.id, targetPerson);
+        setPersons(
+          persons.map((person) =>
+            person.id === targetPerson.id ? targetPerson : person
+          )
+        );
+      }
+    } else {
+      const personObject = {
+        name: newName,
+        number: newNumber,
+        id: persons.length + 1,
+      };
+      personsService
+        .create(personObject)
+        .then((person) => setPersons(persons.concat(person)));
     }
-    const personObject = {
-      name: newName,
-      number: newNumber,
-      id: persons.length + 1,
-    };
-    personsService
-      .create(personObject)
-      .then((person) => setPersons(persons.concat(person)));
-
     setNewName("");
     setNewNumber("");
   };
