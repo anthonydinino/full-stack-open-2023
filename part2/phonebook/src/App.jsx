@@ -150,8 +150,13 @@ const App = () => {
       };
       personsService
         .create(personObject)
-        .then((person) => setPersons(persons.concat(person)));
-      setMessage({ message: `Added ${newName}`, isError: false });
+        .then((person) => {
+          setPersons(persons.concat(person));
+          setMessage({ message: `Added ${newName}`, isError: false });
+        })
+        .catch((error) =>
+          setMessage({ message: error.response.data.error, isError: true })
+        );
     }
     setNewName("");
     setNewNumber("");
