@@ -49,6 +49,9 @@ const deletePerson = (id, { persons, setPersons }, setMessage) => {
 const Persons = ({ personsState, messageState, nameFilter }) => {
   const { persons, setPersons } = personsState;
   const { message, setMessage } = messageState;
+  if (persons.length === 0) {
+    return <p>loading...</p>;
+  }
   return persons
     .filter((person) =>
       person.name.toLowerCase().includes(nameFilter.toLowerCase())
